@@ -32,6 +32,13 @@ GitHub 源码：https://github.com/fython/TelegramGalgameBot'''
     ))
 
 
+@bot.message_handler(commands=['demo'])
+def load_demo(message):
+    bot.reply_to(message, 'Now loading demo scene from https://1cup.rabi.coffee/demo_scene ...')
+    message.text = '/load_scene_url https://1cup.rabi.coffee/demo_scene/1.md'
+    load_scene_url_manually(message)
+
+
 @bot.message_handler(commands=['load_scene'])
 def load_scene_manually(message):
     """Load demo_scene from file manually.
