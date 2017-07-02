@@ -102,6 +102,8 @@ def load_scene_from_url(url):
 def send_scene(chat, scene):
     """Send demo_scene as message
     """
+    if scene is None:
+        return
     bot.send_chat_action(chat.id, 'typing')
     if scene.picture is not None:
         path = scene.path[:scene.path.rfind('/') + 1]
