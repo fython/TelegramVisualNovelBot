@@ -2,6 +2,7 @@
 # coding=utf-8
 import requests
 import telebot
+import time
 from token_config import TELEBOT_TOKEN
 
 from data_types import Scene, Link
@@ -69,11 +70,14 @@ def load_scene_url_manually(message):
 def load_scene_from_local_file(path):
     """Get demo_scene from local file.
     """
-    scene_file = open(path, 'r')
-    scene = Scene.from_markdown(scene_file.readlines())
-    scene.path = path
-    print(str(scene))
-    return scene
+    try:
+        scene_file = open(path, 'r')
+        scene = Scene.from_markdown(scene_file.readlines())
+        scene.path = path
+        print(str(scene))
+        return scene
+    except:
+        return None
 
 
 def load_scene_from_url(url):
@@ -91,11 +95,29 @@ def load_scene_from_url(url):
 def send_scene(chat, scene):
     """Send demo_scene as message
     """
+    bot.send_chat_action(chat.id, 'typing')
     if scene.picture is not None:
-        pass
-    bot.send_message(chat_id=chat.id, text=scene.content,
-                     parse_mode='Markdown', disable_web_page_preview=False,
-                     reply_markup=scene.get_reply_buttons())
+        path = scene.path[:scene.path.rfind('/') + 1]
+        if scene.picture.startswith('.'):
+            path += scene.picture[1:]
+        elif scene.picture.startswith('./'):
+            path += scene.picture[2:]
+        elif scene.picture.startswith('http'):
+            path = scene.picture
+        else:
+            path += scene.picture
+        if path.startswith('http'):
+            bot.send_photo(chat_id=chat.id, photo=path, caption=scene.content,
+                           reply_markup=scene.get_reply_buttons())
+        else:
+            pic_file = open(path, 'rb')
+            bot.send_photo(chat_id=chat.id, photo=pic_file, caption=scene.content,
+                           reply_markup=scene.get_reply_buttons())
+    else:
+        time.sleep(2)
+        bot.send_message(chat_id=chat.id, text=scene.content,
+                         parse_mode='Markdown', disable_web_page_preview=False,
+                         reply_markup=scene.get_reply_buttons())
 
 
 @bot.message_handler(func=lambda message: True)
@@ -113,6 +135,8 @@ def receive_message(message):
                 path += choice.path[1:]
             elif choice.path.startswith('./'):
                 path += choice.path[2:]
+            elif choice.path.startswith('http'):
+                path = choice.path
             else:
                 path += choice.path
             if path.lower().startswith('http'):
@@ -123,7 +147,7 @@ def receive_message(message):
                 current_scenes[message.chat.id] = scene
                 send_scene(message.chat, scene)
             else:
-                bot.send_message(message.chat.id, 'Failed to load next demo_scene.')
+                bot.send_message(message.chat.id, 'Failed to load next scene.')
 
 
 if __name__ == '__main__':
