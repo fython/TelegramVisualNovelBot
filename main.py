@@ -119,6 +119,18 @@ def load_scene_from_url(url):
     return None
 
 
+def start_scene(chat, next_path):
+    if next_path.lower().startswith('http'):
+        next_scene = load_scene_from_url(next_path)
+    else:
+        next_scene = load_scene_from_local_file(next_path)
+    if next_scene is not None:
+        current_scenes[chat.id] = next_scene
+        send_scene(chat, next_scene)
+    else:
+        bot.send_message(chat.id, 'Failed to load progress.')
+
+
 def send_scene(chat, scene):
     """Send demo_scene as message
     """
@@ -143,10 +155,23 @@ def send_scene(chat, scene):
             bot.send_photo(chat_id=chat.id, photo=pic_file, caption=scene.content,
                            reply_markup=scene.get_reply_buttons())
     else:
-        time.sleep(2)
+        time.sleep(1)
         bot.send_message(chat_id=chat.id, text=scene.content,
                          parse_mode='Markdown', disable_web_page_preview=False,
                          reply_markup=scene.get_reply_buttons())
+    auto_next = scene.get_auto_link()
+    if auto_next is not None:
+        time.sleep(auto_next.delay)
+        next_path = scene.path[:scene.path.rfind('/') + 1]
+        if auto_next.path.startswith('.'):
+            next_path += auto_next.path[1:]
+        elif auto_next.path.startswith('./'):
+            next_path += auto_next.path[2:]
+        elif auto_next.path.startswith('http'):
+            next_path = auto_next.path
+        else:
+            next_path += auto_next.path
+        start_scene(chat, next_path)
 
 
 @bot.message_handler(func=lambda message: True)
@@ -160,15 +185,7 @@ def receive_message(message):
         path = base64.b64decode(code).decode()
         bot.reply_to(message, 'Found progress! Loading...')
         bot.send_chat_action(message.chat.id, 'typing')
-        if path.lower().startswith('http'):
-            scene = load_scene_from_url(path)
-        else:
-            scene = load_scene_from_local_file(path)
-        if scene is not None:
-            current_scenes[message.chat.id] = scene
-            send_scene(message.chat, scene)
-        else:
-            bot.send_message(message.chat.id, 'Failed to load progress.')
+        start_scene(message.chat, path)
     if message.chat.id in current_scenes.keys():
         current_scene = current_scenes[message.chat.id]
         choice = current_scene.find_link(message.text)
@@ -182,15 +199,7 @@ def receive_message(message):
                 path = choice.path
             else:
                 path += choice.path
-            if path.lower().startswith('http'):
-                scene = load_scene_from_url(path)
-            else:
-                scene = load_scene_from_local_file(path)
-            if scene is not None:
-                current_scenes[message.chat.id] = scene
-                send_scene(message.chat, scene)
-            else:
-                bot.send_message(message.chat.id, 'Failed to load next scene.')
+            start_scene(message.chat, path)
 
 
 if __name__ == '__main__':

@@ -7,6 +7,7 @@ STATUS_PLAYING = 0
 STATUS_GAMEOVER = -1
 
 ACTION_NEXT_SCENE = 1
+ACTION_AUTO_NEXT_SCENE = 2
 
 
 class Scene:
@@ -47,18 +48,30 @@ class Scene:
 
         Get telebot.ReplyKeyboardMarkup
         """
-        if len(self.links) <= 0:
-            return types.ReplyKeyboardRemove()
         keyboard = types.ReplyKeyboardMarkup()
+        truelen = 0
         for link in self.links:
-            keyboard.row(types.KeyboardButton(link.title))
-        return keyboard
+            if link.action == ACTION_NEXT_SCENE:
+                truelen += 1
+                keyboard.row(types.KeyboardButton(link.title))
+        if truelen <= 0:
+            return types.ReplyKeyboardRemove()
+        else:
+            return keyboard
 
     def find_link(self, string):
         """Find link from links
         """
         for link in self.links:
             if link.title == string.strip():
+                return link
+        return None
+
+    def get_auto_link(self):
+        """Find auto next scene link
+        """
+        for link in self.links:
+            if link.action == ACTION_AUTO_NEXT_SCENE:
                 return link
         return None
 
@@ -88,8 +101,13 @@ class Scene:
             if line.startswith('!['):
                 picture = line[line.find('](') + 2:line.rfind(')')]
             elif line.startswith('['):
-                link = Link(line[line.find('[') + 1:line.find('](')],
-                            line[line.find('](') + 2:line.rfind(')')])
+                left = line[line.find('[') + 1:line.find('](')]
+                path = line[line.find('](') + 2:line.rfind(')')]
+                if left.startswith('(auto,'):
+                    time = float(left[left.find(',') + 1:left.find(')')].strip())
+                    link = Link(left[left.find(')') + 1:], path, ACTION_AUTO_NEXT_SCENE, time)
+                else:
+                    link = Link(left, path)
                 links.append(link)
             else:
                 content += "\n" + line
@@ -107,11 +125,12 @@ class Link:
         action: Link action type
     """
 
-    def __init__(self, title, path, action=ACTION_NEXT_SCENE):
+    def __init__(self, title, path, action=ACTION_NEXT_SCENE, delay=0.0):
         self.title = title
         self.path = path
         self.action = action
+        self.delay = delay
 
     def __str__(self):
-        return 'Link (title = %s, path = %s, action = %s)' % (self.title,
-                                                              self.path, self.action)
+        return 'Link (title = %s, path = %s, action = %s, delay = %d)' % (self.title, self.path,
+                                                                          self.action, self.delay)
