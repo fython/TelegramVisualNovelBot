@@ -3,9 +3,12 @@
 import requests
 import telebot
 import time
+import base64
 from token_config import TELEBOT_TOKEN
 
 from data_types import Scene, Link
+
+SAVE_HEADER = 'GALBOT::P::'
 
 bot = telebot.TeleBot(TELEBOT_TOKEN)
 
@@ -71,7 +74,24 @@ def load_scene_url_manually(message):
             current_scenes[message.chat.id] = scene
             send_scene(message.chat, scene)
         else:
-            bot.reply_to(message, 'Failed to get demo_scene file from url. Please check if url is valid and accessible.')
+            bot.reply_to(message, 'Failed to get demo_scene file from url.'
+                                  'Please check if url is valid and accessible.')
+
+
+@bot.message_handler(commands=['save'])
+def save_progress(message):
+    """Save current progress
+
+     In fact, progress is saved by current scene url/path.
+    """
+    if message.chat.id in current_scenes.keys():
+        code = base64.b64encode(current_scenes[message.chat.id].path.encode(encoding='utf-8')).decode()
+        bot.send_message(chat_id=message.chat.id, text=('Your progress is saved to this code. If your want to '
+                                                        'load, you can paste it to here '
+                                                        ' send to me.\n```\n%s\n```') % (SAVE_HEADER + code),
+                         parse_mode='Markdown')
+    else:
+        bot.reply_to(message, "Sorry, you aren't playing any game currently. So we cannot save your progress.")
 
 
 def load_scene_from_local_file(path):
@@ -135,6 +155,20 @@ def receive_message(message):
     """
     if message.chat.type != 'private':
         return
+    if message.text.startswith(SAVE_HEADER):
+        code = message.text.replace(SAVE_HEADER, '').strip()
+        path = base64.b64decode(code).decode()
+        bot.reply_to(message, 'Found progress! Loading...')
+        bot.send_chat_action(message.chat.id, 'typing')
+        if path.lower().startswith('http'):
+            scene = load_scene_from_url(path)
+        else:
+            scene = load_scene_from_local_file(path)
+        if scene is not None:
+            current_scenes[message.chat.id] = scene
+            send_scene(message.chat, scene)
+        else:
+            bot.send_message(message.chat.id, 'Failed to load progress.')
     if message.chat.id in current_scenes.keys():
         current_scene = current_scenes[message.chat.id]
         choice = current_scene.find_link(message.text)
