@@ -85,10 +85,10 @@ def save_progress(message):
      In fact, progress is saved by current scene url/path.
     """
     if message.chat.id in current_scenes.keys():
-        code = base64.b64encode(current_scenes[message.chat.id].path.encode(encoding='utf-8')).decode()
+        code = SAVE_HEADER + base64.b64encode(current_scenes[message.chat.id].path.encode(encoding='utf-8')).decode()
         bot.send_message(chat_id=message.chat.id, text=('Your progress is saved to this code. If your want to '
                                                         'load, you can paste it to here '
-                                                        ' send to me.\n```\n%s\n```') % (SAVE_HEADER + code),
+                                                        f' send to me.\n```\n{code}\n```'),
                          parse_mode='Markdown')
     else:
         bot.reply_to(message, "Sorry, you aren't playing any game currently. So we cannot save your progress.")
@@ -103,7 +103,7 @@ def load_scene_from_local_file(path):
         scene.path = path
         print(str(scene))
         return scene
-    except:
+    finally:
         return None
 
 

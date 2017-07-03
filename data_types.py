@@ -38,10 +38,8 @@ class Scene:
         for link in self.links:
             links_str += str(link) + ','
         links_str = links_str[:len(links_str) - 1] + ']'
-        return ('Scene (title = %s, content = %s, picture = %s, links = %s, '
-                'status = %d, path = %s)') % (self.title, self.content,
-                                              self.picture, links_str,
-                                              self.status, self.path)
+        return (f'Scene (title = {self.title}, content = {self.content}, picture = {self.picture},'
+                f'links = {links_str}, status = {self.status}, path = {self.path})')
 
     def get_reply_buttons(self):
         """Get reply buttons (from Links)
@@ -132,5 +130,4 @@ class Link:
         self.delay = delay
 
     def __str__(self):
-        return 'Link (title = %s, path = %s, action = %s, delay = %d)' % (self.title, self.path,
-                                                                          self.action, self.delay)
+        return f'Link (title = {self.title}, path = {self.path}, action = {self.action}, delay = {self.delay})'
