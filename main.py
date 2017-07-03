@@ -7,6 +7,7 @@ import base64
 from token_config import TELEBOT_TOKEN
 
 from data_types import Scene, Link
+import data_parser
 
 SAVE_HEADER = 'GALBOT::P::'
 
@@ -99,7 +100,7 @@ def load_scene_from_local_file(path):
     """
     try:
         scene_file = open(path, 'r')
-        scene = Scene.from_markdown(scene_file.readlines())
+        scene = data_parser.scene_from_markdown(scene_file.readlines())
         scene.path = path
         print(str(scene))
         return scene
@@ -112,7 +113,7 @@ def load_scene_from_url(url):
     """
     r = requests.get(url)
     if r.status_code == 200:
-        scene = Scene.from_markdown(r.text.splitlines())
+        scene = data_parser.scene_from_markdown(r.text.splitlines())
         scene.path = url
         print(str(scene))
         return scene

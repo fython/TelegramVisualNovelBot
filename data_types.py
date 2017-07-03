@@ -3,11 +3,38 @@
 
 from telebot import types
 
+from typing import *
+
 STATUS_PLAYING = 0
 STATUS_GAMEOVER = -1
 
 ACTION_NEXT_SCENE = 1
 ACTION_AUTO_NEXT_SCENE = 2
+
+
+class Link:
+    """Link class
+
+    Describe a link in demo_scene
+
+    Attributes:
+        title: Link title
+        path: Link path
+        action: Link action type
+    """
+    title: str
+    path: str
+    action: int
+    delay: float
+
+    def __init__(self, title, path, action=ACTION_NEXT_SCENE, delay=0.0):
+        self.title = title
+        self.path = path
+        self.action = action
+        self.delay = delay
+
+    def __str__(self):
+        return f'Link (title = {self.title}, path = {self.path}, action = {self.action}, delay = {self.delay})'
 
 
 class Scene:
@@ -23,9 +50,17 @@ class Scene:
         links: Scene links (Buttons). They point to next demo_scene as usual.
         status: The game status of current demo_scene.
     """
+    picture: str
+    title: str
+    content: str
+    links: List[Link]
+    status: int
+    path: str
 
     def __init__(self, picture=None, title=None, content=None,
-                 links=[], status=STATUS_PLAYING, path=None):
+                 links=None, status=STATUS_PLAYING, path=None):
+        if links is None:
+            links = []
         self.picture = picture
         self.title = title
         self.content = content
@@ -73,61 +108,25 @@ class Scene:
                 return link
         return None
 
-    def from_markdown(lines):
-        """Read demo_scene from Markdown
-        """
-        title = None
-        content = ""
-        picture = None
-        links = []
-        content_pos = 0
-        last_title_pos = 0
-        for line in lines:
-            content_pos += 1
-            if line.startswith('#'):
-                title = line.replace('#', '').strip()
-                last_title_pos = content_pos
-            elif len(line.strip()) == line.count('='):
-                break
-            elif len(line.strip()) == line.count('-'):
-                break
-        if (title is None) & (content_pos < len(lines)):
-            title = lines[0]
-        if content_pos >= len(lines):
-            content_pos = last_title_pos
-        for line in lines[content_pos:]:
-            if line.startswith('!['):
-                picture = line[line.find('](') + 2:line.rfind(')')]
-            elif line.startswith('['):
-                left = line[line.find('[') + 1:line.find('](')]
-                path = line[line.find('](') + 2:line.rfind(')')]
-                if left.startswith('(auto,'):
-                    time = float(left[left.find(',') + 1:left.find(')')].strip())
-                    link = Link(left[left.find(')') + 1:], path, ACTION_AUTO_NEXT_SCENE, time)
-                else:
-                    link = Link(left, path)
-                links.append(link)
-            else:
-                content += "\n" + line
-        return Scene(picture, title, content.strip(), links)
 
+class Package:
+    """Package class
 
-class Link:
-    """Link class
-
-    Describe a link in demo_scene
+    Game package
 
     Attributes:
-        title: Link title
-        path: Link path
-        action: Link action type
+        title: Game title
+        desc: The description of game
+        entry_scene: The entry of game
+        path: Game path
     """
+    title: str
+    desc: str
+    entry_scene: str
+    path: str
 
-    def __init__(self, title, path, action=ACTION_NEXT_SCENE, delay=0.0):
+    def __init__(self, title, desc=None, entry_scene=None, path=None):
         self.title = title
+        self.desc = desc
+        self.entry_scene = entry_scene
         self.path = path
-        self.action = action
-        self.delay = delay
-
-    def __str__(self):
-        return f'Link (title = {self.title}, path = {self.path}, action = {self.action}, delay = {self.delay})'
