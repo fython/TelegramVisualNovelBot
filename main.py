@@ -14,6 +14,7 @@ SAVE_HEADER = 'GALBOT::P::'
 bot = telebot.TeleBot(TELEBOT_TOKEN)
 
 current_scenes = {}
+last_message = {}
 
 
 def main():
@@ -111,13 +112,15 @@ def load_scene_from_local_file(path):
 def load_scene_from_url(url):
     """Get demo_scene from url.
     """
-    r = requests.get(url)
-    if r.status_code == 200:
-        scene = data_parser.scene_from_markdown(r.text.splitlines())
-        scene.path = url
-        print(str(scene))
-        return scene
-    return None
+    try:
+        r = requests.get(url)
+        if r.status_code == 200:
+            scene = data_parser.scene_from_markdown(r.text.splitlines())
+            scene.path = url
+            print(str(scene))
+            return scene
+    finally:
+        return None
 
 
 def start_scene(chat, next_path):
@@ -149,17 +152,17 @@ def send_scene(chat, scene):
         else:
             path += scene.picture
         if path.startswith('http'):
-            bot.send_photo(chat_id=chat.id, photo=path, caption=scene.content,
-                           reply_markup=scene.get_reply_buttons())
+            last_message[chat.id] = bot.send_photo(chat_id=chat.id, photo=path, caption=scene.content,
+                                                   reply_markup=scene.get_reply_buttons())
         else:
             pic_file = open(path, 'rb')
-            bot.send_photo(chat_id=chat.id, photo=pic_file, caption=scene.content,
-                           reply_markup=scene.get_reply_buttons())
+            last_message[chat.id] = bot.send_photo(chat_id=chat.id, photo=pic_file, caption=scene.content,
+                                                   reply_markup=scene.get_reply_buttons())
     else:
         time.sleep(1)
-        bot.send_message(chat_id=chat.id, text=scene.content,
-                         parse_mode='Markdown', disable_web_page_preview=False,
-                         reply_markup=scene.get_reply_buttons())
+        last_message[chat.id] = bot.send_message(chat_id=chat.id, text=scene.content,
+                                                 parse_mode='Markdown', disable_web_page_preview=False,
+                                                 reply_markup=scene.get_reply_buttons())
     auto_next = scene.get_auto_link()
     if auto_next is not None:
         time.sleep(auto_next.delay)
