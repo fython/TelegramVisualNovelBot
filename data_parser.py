@@ -1,12 +1,17 @@
 #!/usr/bin/python3
 # coding=utf-8
 
+import json
+
 from data_types import *
 from typing import *
 
 
 def scene_from_markdown(lines: List[str]):
     """Read demo_scene from Markdown
+
+    :param lines: Markdown content lines
+    :return: Scene
     """
     title = None
     content = ""
@@ -42,3 +47,13 @@ def scene_from_markdown(lines: List[str]):
         else:
             content += "\n" + line
     return Scene(picture, title, content.strip(), links)  # type: Scene
+
+
+def package_from_json(jsonstr: str):
+    """Read package from json
+
+    :param jsonstr: Package json
+    :return: Package
+    """
+    data = json.dumps(jsonstr)
+    return Package(data['title'], data['desc'], data['entry_scene'], data['path'])  # type: Package

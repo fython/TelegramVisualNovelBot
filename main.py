@@ -1,18 +1,19 @@
 #!/usr/bin/python3
 # coding=utf-8
-import requests
 import telebot
 import time
 import base64
 from token_config import TELEBOT_TOKEN
 
+import utils
+
 from data_types import Scene, Link
-import data_parser
 
 SAVE_HEADER = 'GALBOT::P::'
 
 bot = telebot.TeleBot(TELEBOT_TOKEN)
 
+current_game = {}
 current_scenes = {}
 last_message = {}
 
@@ -55,7 +56,7 @@ def load_scene_manually(message):
         bot.reply_to(message, ('Invalid arguments. '
                                'Example: /load_scene ./demo_scene/1.md'))
     else:
-        scene = load_scene_from_local_file(args[1])
+        scene = utils.load_scene_from_local_file(args[1])
         current_scenes[message.chat.id] = scene
         send_scene(message.chat, scene)
 
@@ -71,7 +72,7 @@ def load_scene_url_manually(message):
         bot.reply_to(message, ('Invalid arguments. '
                                'Example: /load_scene_url https://example.com/demo_scene/1.md'))
     else:
-        scene = load_scene_from_url(args[1])
+        scene = utils.load_scene_from_url(args[1])
         if scene is not None:
             current_scenes[message.chat.id] = scene
             send_scene(message.chat, scene)
@@ -96,38 +97,11 @@ def save_progress(message):
         bot.reply_to(message, "Sorry, you aren't playing any game currently. So we cannot save your progress.")
 
 
-def load_scene_from_local_file(path):
-    """Get demo_scene from local file.
-    """
-    try:
-        scene_file = open(path, 'r')
-        scene = data_parser.scene_from_markdown(scene_file.readlines())
-        scene.path = path
-        print(str(scene))
-        return scene
-    finally:
-        return None
-
-
-def load_scene_from_url(url):
-    """Get demo_scene from url.
-    """
-    try:
-        r = requests.get(url)
-        if r.status_code == 200:
-            scene = data_parser.scene_from_markdown(r.text.splitlines())
-            scene.path = url
-            print(str(scene))
-            return scene
-    finally:
-        return None
-
-
 def start_scene(chat, next_path):
     if next_path.lower().startswith('http'):
-        next_scene = load_scene_from_url(next_path)
+        next_scene = utils.load_scene_from_url(next_path)
     else:
-        next_scene = load_scene_from_local_file(next_path)
+        next_scene = utils.load_scene_from_local_file(next_path)
     if next_scene is not None:
         current_scenes[chat.id] = next_scene
         send_scene(chat, next_scene)
